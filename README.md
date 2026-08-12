@@ -93,7 +93,9 @@ Any MCP client that supports the stdio transport can run `npx -y mcp-easycomplia
 
 ## Remote endpoint (streamable HTTP)
 
-The same package contains a second entry point, `mcp-easycompliance-http`, which serves the identical tool set over the MCP streamable HTTP transport. It is intended for hosted operation (e.g. `https://mcp.easycompliance.de/mcp`) so clients can connect without a local installation. It works today with remote clients that can send custom request headers, such as the OpenAI Responses API or MCP SDK clients; ChatGPT custom connectors depend on compatible authentication (OAuth is a planned extension, see below), so ChatGPT app support is in preparation:
+easycompliance hosts a remote endpoint with the identical tool set at `https://www.easycompliance.de/mcp.api` (streamable HTTP; implemented in PHP inside the easycompliance stack, verified against the same MCP SDK client test harness as this package). It works with remote clients that can send custom request headers, such as the OpenAI Responses API or MCP SDK clients; ChatGPT custom connectors depend on compatible authentication (OAuth is a planned extension, see below), so ChatGPT app support is in preparation.
+
+The package also contains a second entry point, `mcp-easycompliance-http`, which serves the same tool set over streamable HTTP for **self-hosting** (e.g. enterprise deployments in your own infrastructure – see [`deploy/`](deploy/)):
 
 - Authentication: the client sends its easycompliance API key in the **`X-API-Key`** request header; the server passes it through 1:1 to the REST API on every call. There is no key store, no session state and no persistence in the MCP layer.
 - OAuth is currently out of scope (planned as a future extension for connector directories that require it).
@@ -101,12 +103,12 @@ The same package contains a second entry point, `mcp-easycompliance-http`, which
 Example (Claude Code):
 
 ```bash
-claude mcp add --transport http easycompliance https://mcp.easycompliance.de/mcp --header "X-API-Key: your-api-key"
+claude mcp add --transport http easycompliance https://www.easycompliance.de/mcp.api --header "X-API-Key: your-api-key"
 ```
 
 ## Operations & security (self-hosting the HTTP endpoint)
 
-Deployment templates (nginx reverse proxy, systemd unit, Dockerfile for containerized operation + step-by-step guide with both variants) are in [`deploy/`](deploy/):
+Deployment templates (nginx reverse proxy, systemd unit, Dockerfile + step-by-step guide) are in [`deploy/`](deploy/):
 
 - The Node process binds to `127.0.0.1` only; TLS and the public hostname are provided by the nginx reverse proxy.
 - The server is **stateless**: each request creates a fresh server instance with the key from the request header; nothing outlives the request.

@@ -77,8 +77,26 @@ async function call(client, name, args) {
 }
 
 try {
-	await waitForHealthz();
-	check('GET /healthz → 200', true);
+	if (externalUrl === '') {
+		await waitForHealthz();
+		check('GET /healthz → 200', true);
+	} else {
+		// Externer Endpunkt: Der Node-Server bietet /healthz, der PHP-Endpunkt
+		// (api/mcp.php im Hauptrepo) die projektübliche Statusprobe
+		// ?status=check → "up". Eine der beiden Proben muss antworten.
+		let alive = false;
+		try {
+			const h = await fetch(`${BASE}/healthz`);
+			alive = h.ok;
+		} catch {
+			// /healthz nicht vorhanden – Statusprobe versuchen.
+		}
+		if (!alive) {
+			const s = await fetch(`${MCP_URL}?status=check`);
+			alive = s.ok && (await s.text()).trim() === 'up';
+		}
+		check('Erreichbarkeitsprobe (healthz oder ?status=check)', alive);
+	}
 
 	// Nicht-POST auf dem MCP-Pfad wird abgelehnt (stateless: kein GET-Stream).
 	const getRes = await fetch(MCP_URL, { headers: { accept: 'application/json, text/event-stream' } });

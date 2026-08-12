@@ -21,9 +21,9 @@ Beim Anlegen auf GitHub **keine** Startdateien generieren lassen (README,
 ersten Upload vergessen – hier sind sie explizit aufgeführt):
 
 ```
-.eslintrc.js                      ← DOTFILE, nicht vergessen!
-.gitignore                        ← DOTFILE, nicht vergessen!
-.github/workflows/npm-publish.yml ← DOTFILE-Ordner, nicht vergessen!
+.eslintrc.js                         ← DOTFILE, nicht vergessen!
+.gitignore                           ← DOTFILE, nicht vergessen!
+.github/workflows/npm-publish.yml    ← DOTFILE-Ordner, nicht vergessen!
 LICENSE
 PUBLISHING.md
 README.md
@@ -61,7 +61,31 @@ EC_API_KEY=<Testkunden-Key> npm run livetest:http   # Live-Harness (Streamable H
 Der Testkunden-Key kommt vom Maintainer, wird nur als Umgebungsvariable
 gesetzt und nie committet.
 
-## Schritt 3: Auf npm veröffentlichen
+## Schritt 3: Auf npm veröffentlichen ✅ ERLEDIGT (2026-08-12)
+
+**Status:** `mcp-easycompliance@0.1.0` ist veröffentlicht – über den
+GitHub-Actions-Workflow im Org-Repo, inklusive Provenance-Attestation
+(Registry-Feld `dist.attestations`). Verifiziert per Registry-Abfrage,
+Testinstallation und Live-Lauf des installierten Pakets über echten
+STDIO-Transport gegen die Produktions-API (4/4 PASS, 2026-08-12).
+
+**Beim Erstrelease gelernter Betriebsfakt:** Der Workflow-Lauf erzeugte die
+GitHub-Warnung „Node.js 20 is deprecated … being forced to run on
+Node.js 24" – `actions/checkout@v4` und `actions/setup-node@v4` targeten
+die abgekündigte Node-20-Runner-Runtime. Der Workflow in diesem Repo nutzt
+seit dem Fix **v5** beider Actions; die Kopie im Org-Repo entsprechend
+nachziehen.
+
+**Noch offen (Maintainer):** In den npm-Paketeinstellungen den **Trusted
+Publisher** auf das Org-Repo/Workflow konfigurieren, danach den
+Granular-Token widerrufen und das GitHub-Secret `NPM_TOKEN` löschen.
+Wichtig dafür: Der Workflow enthält seit dem Codex-Fix einen
+`npm install -g npm@latest`-Schritt vor dem Publish – Trusted Publishing
+(OIDC) setzt npm CLI ≥ 11.5.1 voraus, Node 22 bündelt eine ältere
+Version. Beim Nachziehen der Workflow-Kopie im Org-Repo (v5-Actions)
+diesen Schritt mit übernehmen.
+
+Ursprüngliche Anleitung (der Vollständigkeit halber):
 
 Der Actions-Workflow `.github/workflows/npm-publish.yml` ist 1:1 vom
 n8n-Repo übernommen (workflow_dispatch + release-Trigger,
