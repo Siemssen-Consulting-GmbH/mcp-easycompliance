@@ -1,0 +1,39 @@
+# Veröffentlicht das Paket auf npm – 1:1 nach dem Muster des n8n-Pakets
+# (Siemssen-Consulting-GmbH/n8n-nodes-easycompliance), inkl. der dort
+# gelernten Betriebsfakten: node-version 22 (nicht 20) und Provenance.
+#
+# Erstveröffentlichung: Granular-Token als Secret NPM_TOKEN ("All packages"
+# + "Bypass 2FA"); danach Trusted Publisher konfigurieren, Token widerrufen
+# und das Secret löschen – der Workflow publiziert dann tokenlos über die
+# OIDC-Identität (permissions.id-token). Details: PUBLISHING.md.
+name: Publish to npm
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # npm-Provenance (SLSA-Attestation) + Trusted Publishing
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run build
+
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
