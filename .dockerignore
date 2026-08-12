@@ -1,0 +1,9 @@
+# Build-Kontext des CI-Images klein halten: Das Image wird aus src/ gebaut
+# (Multi-Stage in Dockerfile) - lokale Artefakte gehoeren nicht hinein.
+node_modules/
+dist/
+*.tsbuildinfo
+test/
+deploy/
+.github/
+*.md
