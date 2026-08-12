@@ -1,0 +1,60 @@
+# ============================================================================
+# nginx-Reverse-Proxy fuer den Remote-MCP-Endpunkt mcp.easycompliance.de
+# (Stufe 2 der MCP-Integration, Hosting-Option a: Node-Prozess auf vs187;
+# docs/KICKOFF_MCP_INTEGRATION.md Abschnitt 3)
+#
+# HINTERGRUND: Der MCP-Server (mcp-easycompliance, Streamable HTTP) laeuft
+# als lokaler Node-Prozess und bindet AUSSCHLIESSLICH an 127.0.0.1:8765
+# (siehe deploy/mcp-easycompliance.service.example). Oeffentlich erreichbar
+# wird er nur ueber diesen nginx-vhost mit TLS. Der Server ist stateless:
+# jede Anfrage traegt den Kunden-API-Key im Header "X-API-Key", der 1:1 an
+# die easycompliance-REST-API durchgereicht wird - nginx muss den Header
+# unveraendert weitergeben (proxy_set_header unten NICHT entfernen).
+#
+# EINRICHTUNG (DNS/vhost/TLS richtet der Maintainer ein):
+#  1. DNS: A/AAAA-Record mcp.easycompliance.de auf vs187 zeigen lassen.
+#  2. Plesk: mcp.easycompliance.de als Subdomain anlegen, Let's-Encrypt-
+#     Zertifikat ausstellen.
+#  3. Diesen Block in Plesk -> Websites & Domains -> mcp.easycompliance.de ->
+#     "Einstellungen fuer Apache & nginx" -> "Zusaetzliche nginx-Anweisungen"
+#     einfuegen (Plesk stellt server{}-Rahmen und TLS selbst - dann nur die
+#     location-Bloecke uebernehmen). Alternativ ausserhalb von Plesk den
+#     kompletten server{}-Block als eigene conf verwenden.
+#  4. Node-Dienst starten (deploy/mcp-easycompliance.service.example) und
+#     testen: curl -s https://mcp.easycompliance.de/healthz  ->  "ok"
+#
+# SICHERHEIT: Es gibt bewusst KEINE Auth in nginx - die Authentifizierung
+# uebernimmt die REST-API selbst (401 bei ungueltigem Key). Der MCP-Layer
+# loggt keine Namen/Pruefdaten (Datenschutz; das apilog der API ist der
+# Audit-Trail). access_log hier deshalb ebenfalls ohne Request-Bodys
+# (nginx-Standard) - wer noch strenger sein will, setzt access_log off.
+# ============================================================================
+
+# --- Variante A: Bloecke fuer Plesks "Zusaetzliche nginx-Anweisungen" -------
+
+# MCP-Endpunkt: POST-Requests an den lokalen Node-Prozess durchreichen.
+location = /mcp {
+    proxy_pass http://127.0.0.1:8765/mcp;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-API-Key $http_x_api_key;
+    proxy_set_header X-Real-IP $remote_addr;
+    # Antworten kommen als application/json (enableJsonResponse) - Buffering
+    # aus, damit auch eventuelle SSE-Antworten kuenftiger Versionen sofort
+    # beim Client ankommen.
+    proxy_buffering off;
+    proxy_read_timeout 60s;
+    # Tool-Aufrufe sind klein; der Node-Prozess begrenzt zusaetzlich auf 1 MB.
+    client_max_body_size 2m;
+}
+
+# Health-Endpoint fuer Uptime-Checks (liefert "ok" ohne Auth).
+location = /healthz {
+    proxy_pass http://127.0.0.1:8765/healthz;
+    proxy_set_header Host $host;
+}
+
+# Alles andere auf der Subdomain hat keinen Inhalt -> 404.
+location / {
+    return 404;
+}

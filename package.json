@@ -1,0 +1,60 @@
+{
+	"name": "mcp-easycompliance",
+	"version": "0.1.0",
+	"description": "MCP server (Model Context Protocol) for the easycompliance sanctions list and PEP screening API",
+	"keywords": [
+		"mcp",
+		"model-context-protocol",
+		"mcp-server",
+		"easycompliance",
+		"sanctions",
+		"sanctions-list",
+		"pep",
+		"compliance",
+		"screening"
+	],
+	"license": "MIT",
+	"homepage": "https://www.easycompliance.de/schnittstellen/mcp/",
+	"author": {
+		"name": "Siemssen Consulting GmbH",
+		"email": "info@easycompliance.de"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Siemssen-Consulting-GmbH/mcp-easycompliance.git"
+	},
+	"bugs": {
+		"url": "https://github.com/Siemssen-Consulting-GmbH/mcp-easycompliance/issues"
+	},
+	"engines": {
+		"node": ">=20"
+	},
+	"main": "dist/server.js",
+	"bin": {
+		"mcp-easycompliance": "dist/stdio.js",
+		"mcp-easycompliance-http": "dist/http.js"
+	},
+	"files": [
+		"dist",
+		"deploy"
+	],
+	"scripts": {
+		"build": "tsc",
+		"dev": "tsc --watch",
+		"lint": "eslint src --ext .ts",
+		"livetest": "node test/livetest.mjs",
+		"livetest:http": "node test/livetest_http.mjs",
+		"prepublishOnly": "npm run build"
+	},
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "^1.30.0",
+		"zod": "^3.25.0"
+	},
+	"devDependencies": {
+		"@types/node": "^20.14.0",
+		"@typescript-eslint/eslint-plugin": "^8.0.0",
+		"@typescript-eslint/parser": "^8.0.0",
+		"eslint": "^8.57.0",
+		"typescript": "^5.5.0"
+	}
+}

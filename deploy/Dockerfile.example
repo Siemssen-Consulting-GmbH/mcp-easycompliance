@@ -1,0 +1,35 @@
+# ============================================================================
+# Docker-Image fuer den Remote-MCP-Endpunkt mcp.easycompliance.de
+# (Variante B in deploy/DEPLOYMENT.md: Betrieb ueber die Plesk-Docker-
+# Erweiterung auf vs187 - loest das glibc-Problem von CentOS 7, weil das
+# Image sein eigenes Userland mitbringt; der 3.10er-Kernel darunter genuegt.)
+#
+# Bauen:    docker build -t mcp-easycompliance:latest .
+# Pinnen:   docker build --build-arg MCP_VERSION=0.1.0 -t mcp-easycompliance:0.1.0 .
+# Starten:  siehe DEPLOYMENT.md Variante B, Schritt 4 (WICHTIG: Host-Port
+#           an 127.0.0.1 binden, sonst ist der Dienst ohne TLS oeffentlich!)
+# ============================================================================
+
+FROM node:22-alpine
+
+# Versionspinning beim Build (Default: neueste veroeffentlichte Version).
+ARG MCP_VERSION=latest
+RUN npm install -g mcp-easycompliance@${MCP_VERSION}
+
+# Container-intern MUSS der Prozess an 0.0.0.0 binden, sonst erreicht das
+# Docker-Port-Mapping ihn nicht. Nach aussen bleibt der Dienst trotzdem
+# lokal, weil der HOST-Port an 127.0.0.1 gebunden wird (-p 127.0.0.1:8765:8765).
+ENV MCP_HTTP_HOST=0.0.0.0
+ENV MCP_HTTP_PORT=8765
+EXPOSE 8765
+
+# Unprivilegierter Nutzer (im offiziellen node-Image bereits vorhanden).
+USER node
+
+# Supervision: Docker-Healthcheck gegen den /healthz-Endpoint des Servers
+# (busybox-wget ist in alpine enthalten). Ergaenzt die Restart-Policy
+# "always" aus DEPLOYMENT.md - die systemd-Unit der Variante A entfaellt.
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD wget -qO- http://127.0.0.1:8765/healthz >/dev/null 2>&1 || exit 1
+
+CMD ["mcp-easycompliance-http"]

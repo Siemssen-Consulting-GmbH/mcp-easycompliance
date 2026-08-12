@@ -1,0 +1,51 @@
+# ============================================================================
+# systemd-Unit fuer den Remote-MCP-Endpunkt (Stufe 2, Hosting-Option a)
+#
+# Installiert das npm-Paket mcp-easycompliance global oder aus einem Checkout
+# und betreibt dist/http.js als dauerhaften Dienst hinter nginx
+# (deploy/nginx_mcp.conf.example). Der Prozess bindet nur an 127.0.0.1 und
+# kennt KEINEN API-Key - Keys kommen pro Request vom Client (X-API-Key)
+# und werden 1:1 an die REST-API durchgereicht.
+#
+# EINRICHTUNG:
+#  1. Node.js >= 20 bereitstellen (Hinweis CentOS 7: siehe DEPLOYMENT.md,
+#     Abschnitt "Node.js auf vs187").
+#  2. Paket installieren, z. B.:  npm install -g mcp-easycompliance
+#     (NODE_BIN unten anpassen; `command -v mcp-easycompliance-http` zeigt
+#     den Installationspfad.)
+#  3. Datei nach /etc/systemd/system/mcp-easycompliance.service kopieren,
+#     Pfade pruefen, dann:
+#       systemctl daemon-reload
+#       systemctl enable --now mcp-easycompliance
+#  4. Test:  curl -s http://127.0.0.1:8765/healthz  ->  "ok"
+# ============================================================================
+
+[Unit]
+Description=easycompliance MCP server (streamable HTTP, stateless)
+After=network.target
+
+[Service]
+Type=simple
+# Unprivilegierter Nutzer ohne Shell (vorab anlegen:
+#   useradd -r -s /sbin/nologin mcpec )
+User=mcpec
+Group=mcpec
+# Pfad zur global installierten CLI anpassen (command -v mcp-easycompliance-http).
+ExecStart=/usr/bin/mcp-easycompliance-http
+Restart=always
+RestartSec=3
+
+# Konfiguration: Port/Host/Pfad des lokalen Listeners. Die API-URLs haben
+# sinnvolle Defaults (oeffentliche Endpunkte) und sind nur bei kunden-
+# individuellen URLs zu setzen (EC_SANCTIONS_URL / EC_PEP_URL).
+Environment=MCP_HTTP_HOST=127.0.0.1
+Environment=MCP_HTTP_PORT=8765
+
+# Haertung: kein Dateisystem-Schreibzugriff noetig, keine Privilegien.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
