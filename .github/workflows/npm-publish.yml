@@ -6,6 +6,11 @@
 # + "Bypass 2FA"); danach Trusted Publisher konfigurieren, Token widerrufen
 # und das Secret löschen – der Workflow publiziert dann tokenlos über die
 # OIDC-Identität (permissions.id-token). Details: PUBLISHING.md.
+#
+# Actions-Versionen: checkout/setup-node in v5 (Erstrelease 2026-08-12 lief
+# mit v4 und erzeugte die GitHub-Warnung "Node.js 20 is deprecated ...
+# being forced to run on Node.js 24" - die v4-Actions targeten die
+# abgekuendigte Node-20-Runner-Runtime, v5 die aktuelle).
 name: Publish to npm
 
 on:
@@ -21,9 +26,9 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
@@ -33,6 +38,12 @@ jobs:
       - run: npm run lint
 
       - run: npm run build
+
+      # Trusted Publishing (tokenloser OIDC-Austausch nach Widerruf des
+      # NPM_TOKEN) setzt npm CLI >= 11.5.1 voraus; Node 22 buendelt eine
+      # aeltere Version (Codex-Review PR #271 - ohne dieses Upgrade schluege
+      # der erste tokenlose Release mit einem Auth-Fehler fehl).
+      - run: npm install -g npm@latest
 
       - run: npm publish --provenance --access public
         env:
